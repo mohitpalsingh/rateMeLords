@@ -24,7 +24,7 @@
 
 
 ## curls:
-1. generateQuestions:
+## 1. generateQuestions:
     curl --location 'http://localhost:3000/assessment/generate-questions' \
         --header 'Content-Type: application/json' \
         --data '{
@@ -37,7 +37,7 @@
                    }
                  }'
 
-2. submit-answers:
+## 2. submit-answers:
     curl --location 'http://localhost:3000/assessment/submit-answers' \
         --header 'Content-Type: application/json' \
         --data '{
@@ -86,7 +86,7 @@
             ]
         }'
 
-3. evaluate-answers:
+## 3. evaluate-answers:
     curl --location 'http://localhost:3000/assessment/evaluate-answers' \
         --header 'Content-Type: application/json' \
         --data '{
