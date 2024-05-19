@@ -1,0 +1,12 @@
+# Environment files
+.env
+
+# Dependency management files
+node_modules/
+package-lock.json
+
+# Build artifacts
+dist/
+
+# IDE and editor configuration files
+.vscode/
