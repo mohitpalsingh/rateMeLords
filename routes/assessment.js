@@ -5,6 +5,7 @@ const {
     HarmCategory,
     HarmBlockThreshold,
 } = require("@google/generative-ai");
+const { v4 } = require('uuid');
 const { Question, Answer, Evaluation } = require('../models');
 require('dotenv').config();
 
@@ -51,18 +52,21 @@ const chatSession = model.startChat({
 
 
 router.post('/generate-questions', async (req, res) => {
+    const userId = v4();
     const { skill, rubrics } = req.body;
 
     try {
-        const prompt = `Generate a list of questions to assess the skill "${skill}" based on the following rubrics: ${JSON.stringify(rubrics)}`;
+        const prompt = `Generate a list of 10 questions to assess the skill "${skill}" based on the following rubrics: ${JSON.stringify(rubrics)}. Write nothing but questions with number in front of them separated by "\n\n".`;
 
         const result = await chatSession.sendMessage(prompt);
 
         const questions = result.response.text();
-        questions = questions.map(choice => choice.text.trim());
 
-        const questionRecords = await Promise.all(questions.map(async (content) => {
-            return Question.create({ skill, rubric: rubrics, content });
+        const parsedQuestions = questions.split("\n");
+
+        const questionRecords = await Promise.all(parsedQuestions.map(async (content) => {
+            const newQuestion = new Question({ userId, skill, content });
+            return await newQuestion.save();
         }));
 
         res.json({ questions: questionRecords });
@@ -72,38 +76,66 @@ router.post('/generate-questions', async (req, res) => {
 });
 
 router.post('/submit-answers', async (req, res) => {
-    const { questionId, content } = req.body;
+    const { userId, answers } = req.body;
+
+    if (!answers || !Array.isArray(answers)) {
+        return res.status(400).json({ error: 'Invalid request format. Please provide an array of answers.' });
+    }
 
     try {
-        const answer = await Answer.create({ questionId, content });
-        res.json({ answer });
+        const answerPromises = answers.map(async (answer) => {
+            return await Answer.create({
+                userId,
+                questionId: answer.questionId,
+                content: answer.content,
+            });
+        });
+
+        const createdAnswers = await Promise.all(answerPromises);
+
+        res.json({ message: 'Answers submitted successfully!', answers: createdAnswers });
     } catch (error) {
-        res.status(500).json({ error: 'Error submitting answer' });
+        console.error(error);
+        res.status(500).json({ error: 'Error submitting answers' });
     }
 });
 
 router.post('/evaluate-answers', async (req, res) => {
-    const { answerId } = req.body;
+    const { userId, answers, rubrics } = req.body;
+
+    if (!answers || !Array.isArray(answers)) {
+        return res.status(400).json({ error: 'Invalid request format. Please provide an array of answers.' });
+    }
 
     try {
-        const answer = await Answer.findByPk(answerId, {
-            include: Question,
-        });
+        let message = '';
+        for (const answerObj of answers) {
+            const { questionId, answerId } = answerObj;
 
-        if (!answer) {
-            return res.status(404).json({ error: 'Answer not found' });
+            const answer = await Answer.findByPk(answerId).catch(() => null);
+            const question = await Question.findByPk(questionId).catch(() => null);
+
+            if (!answer || !question) {
+                continue;
+            }
+
+            const questionString = question.content;
+            const answerString = answer.content;
+
+            message += `\n\n**Question:** ${questionString}\n\nAnswer: ${answerString}\n\n`;
         }
 
-        const prompt = `Evaluate the following answer based on the rubrics: ${JSON.stringify(answer.Question.rubric)}\n\nAnswer: ${answer.content}`;
+        message = `Evaluate the following answers from a candidate and based on the rubrics: ${JSON.stringify(rubrics)}\n\n${message}. Give me a one word final rubric for this candidate.`;
 
-        const result = await chatSession.sendMessage(prompt);
+        const result = await chatSession.sendMessage(message);
         const score = result.response.text();
 
-        const evaluation = await Evaluation.create({ answerId, score });
+        const evaluation = await Evaluation.create({ userId, score });
 
         res.json({ evaluation });
     } catch (error) {
-        res.status(500).json({ error: 'Error evaluating answer' });
+        console.error(error);
+        res.status(500).json({ error: 'Error evaluating answers' });
     }
 });
 

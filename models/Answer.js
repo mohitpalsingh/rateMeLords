@@ -1,5 +1,9 @@
 module.exports = (sequelize, DataTypes) => {
     const Answer = sequelize.define('Answer', {
+        userId: {
+            type: DataTypes.STRING,
+            allowNull: false,
+        },
         questionId: {
             type: DataTypes.INTEGER,
             allowNull: false,
@@ -7,10 +11,7 @@ module.exports = (sequelize, DataTypes) => {
         content: {
             type: DataTypes.TEXT,
             allowNull: false,
-        },
-        evaluationId: {
-            type: DataTypes.INTEGER,
-        },
+        }
     });
 
     Answer.associate = (models) => {

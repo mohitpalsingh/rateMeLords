@@ -1,11 +1,11 @@
 module.exports = (sequelize, DataTypes) => {
     const Question = sequelize.define('Question', {
-        skill: {
+        userId: {
             type: DataTypes.STRING,
             allowNull: false,
         },
-        rubric: {
-            type: DataTypes.JSONB,
+        skill: {
+            type: DataTypes.STRING,
             allowNull: false,
         },
         content: {
