@@ -12,15 +12,15 @@
 
 ## project structure:
     rateMeLords/
-├── index.js
-├── .env
-├── models/
-│   ├── index.js
-│   ├── Question.js
-│   ├── Answer.js
-│   └── Evaluation.js
-└── routes/
-    └── assessment.js
+    ├── index.js
+    ├── .env
+    ├── models/
+    │   ├── index.js
+    │   ├── Question.js
+    │   ├── Answer.js
+    │   └── Evaluation.js
+    └── routes/
+        └── assessment.js
 
 
 ## curls:
